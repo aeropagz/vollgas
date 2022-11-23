@@ -1,5 +1,7 @@
 const unsigned int DEFAULT_WORD = 0b11111111111100000000000000000001;
 
+
+
 void setDirection(unsigned int *word, unsigned char direction)
 {
     if (direction > 1){

@@ -4,6 +4,7 @@
 #include <linux/cdev.h>
 #include <linux/uaccess.h>
 #include <linux/hrtimer.h>
+#include <linux/delay.h>
 
 #include "control.h"
 #include "gpio.h"
@@ -15,96 +16,91 @@ static struct cdev *myCdev;
 static struct class *myClass;
 static struct device *myDevice;
 
-static int waiting = 0;
-static int position = 0;
-
 static unsigned int command = DEFAULT_WORD;
+
+struct outputBuffer {
+    unsigned char encodedBits [16];
+    unsigned int position;
+    unsigned int length;
+} out;
+
 
 static struct hrtimer mytimer;
 ktime_t mytime;
 
-static enum hrtimer_restart finish(struct hrtimer *hrt)
-{
-    waiting = 0;
-    return HRTIMER_NORESTART;
+
+void writeBitIntoBuffer(unsigned char buffer [], unsigned int position, unsigned char value){
+    int bytePos = position / 8;
+    int bitPos = position % 8;
+    printk("byte: %d, bit: %d, pos: %u, value: %u\n", bytePos, bitPos, position, value);
+    if(value) {
+        buffer[bytePos] |= (1 << bitPos);  
+    } else {
+        buffer[bytePos] &= ~(1 << bitPos);
+    }
 }
 
-static enum hrtimer_restart one_set_low(struct hrtimer *hrt)
+char readBitFromBuffer(unsigned char buffer[], unsigned int position){
+    int bytePos = position / 8;
+    int bitPos = position % 8;
+    unsigned char read = buffer[bytePos] & (1 << bitPos);
+    return read >> bitPos;
+}
+
+static enum hrtimer_restart write_bit(struct hrtimer *hrt)
 {
-    set_low();
-    mytimer.function = finish;
+    if(out.position >= out.length)
+        return HRTIMER_NORESTART;
+
+    unsigned char value = readBitFromBuffer(out.encodedBits, out.position++);
+    printk("bit: %d | val: %d ",out.position - 1, value);
     hrtimer_add_expires_ns(&mytimer, 58000);
     return HRTIMER_RESTART;
 }
 
-static enum hrtimer_restart zero_set_low(struct hrtimer *hrt)
-{
-    set_low();
-    mytimer.function = finish;
-    hrtimer_add_expires_ns(&mytimer, 116000);
-    return HRTIMER_RESTART;
+
+void encodePayload(struct outputBuffer* out, unsigned int word){
+    printk("start encoding \n");
+    out->position = 0;
+    int i = 0;
+
+    while(i < 32 ){
+        if(word & (1 << i)) {
+            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
+            writeBitIntoBuffer(out->encodedBits, out->position++, 0);
+        } else {
+            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
+            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
+            writeBitIntoBuffer(out->encodedBits, out->position++, 0);
+            writeBitIntoBuffer(out->encodedBits, out->position++, 0);
+        }
+        i++;
+    }
+    printk("finish encoding \n");
+    out->length = out->position;
+    out->position = 0;
+    printk("payload length: %u",out->length);
 }
 
-void send_one(void)
-{
-    mytimer.function = one_set_low;
-    mytime = ktime_set(0, 58000);
-    waiting = 1;
-    hrtimer_start(&mytimer, mytime, HRTIMER_MODE_REL);
-    set_high();
-}
 
-void send_zero(void) {
-    mytimer.function = zero_set_low;
-    mytime = ktime_set(0, 116000);
-    waiting = 1;
-    hrtimer_start(&mytimer, mytime, HRTIMER_MODE_REL);
-    set_high();
-}
-
-void wait_for_finish(void){
-    while(waiting){}
-    return;
-}
 
 void sendWord(unsigned int word)
 {
-    if (sizeof word != 4)
-    {
-        printk("word has wrong size!");
-        return;
-    }
-    printk("start");
-    while (position < 32)
-    {
-        if (word & (1 << position))
-        {
-            // is one, send one
-            send_one();
-            printk("1");
-            wait_for_finish();
-        }
-        else
-        {
-            // is zero, send zero
-            send_zero();
-            printk("0");
-            wait_for_finish();
-        }
-        position++;
-    }
-    printk("ende");
-    position = 0;
+    encodePayload(&out, word);
+    mytimer.function = write_bit;
+    mytime = ktime_set(0, 58000);
+    hrtimer_start(&mytimer, mytime, HRTIMER_MODE_REL);
 }
 
 
 void send_left_fast(void){
+    printk("start\n");
     setDirection(&command, 1);
     setMotor(&command, 1);
     setSpeed(&command, 255);
-    printk("command: %u\n", command);
     sendWord(command);
     command = DEFAULT_WORD;
+    printk("Command left fast sending...");
 }
 
 
@@ -118,7 +114,7 @@ static struct file_operations fops = {
 /* Wenn Modul in den Kernel geladen wird */
 static int __init mod_init(void)
 {
-    printk("init wird ausgef?hrt\n");
+    printk("INIT vollgas\n");
     if (alloc_chrdev_region(&myDevNumber, 0, 1, DEV_NAME) < 0)
         return EIO;
 
@@ -175,7 +171,7 @@ free_device_number:
 /* If module is removed from kernel */
 static void __exit mod_exit(void)
 {
-    printk("__exit wird ausgef?hrt\n");
+    printk("EXIT vollgas\n");
     clean_up_gpio();
     device_destroy(myClass, myDevNumber);
     class_destroy(myClass);

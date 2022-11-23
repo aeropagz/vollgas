@@ -41,16 +41,16 @@ __used __section("__versions") = {
 	{ 0x6453db1a, "cdev_alloc" },
 	{ 0xe3ec2f2b, "alloc_chrdev_region" },
 	{ 0xec523f88, "hrtimer_start_range_ns" },
+	{ 0xa339085b, "gpiod_set_raw_value" },
 	{ 0xfe990052, "gpio_free" },
 	{ 0xb77942ad, "gpiod_direction_output_raw" },
+	{ 0xf7d5fff7, "gpio_to_desc" },
 	{ 0x47229b5c, "gpio_request" },
 	{ 0x92997ed8, "_printk" },
-	{ 0xa339085b, "gpiod_set_raw_value" },
-	{ 0xf7d5fff7, "gpio_to_desc" },
 	{ 0xb1ad28e0, "__gnu_mcount_nc" },
 };
 
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "62E05B5F6B9A2A9397FFF72");
+MODULE_INFO(srcversion, "3F7DC6469471BD87FACC000");
