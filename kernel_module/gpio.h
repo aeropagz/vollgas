@@ -11,19 +11,19 @@ int init_gpio(void)
         return -1;
     if (gpio_direction_output(PIN_NUM, 0))
     {
-        printk("direction_output failed %d\n", err);
+        printk("direction_output failed");
         gpio_free(PIN_NUM);
         return -1;
     }
     return 0;
 }
 
-void set_high()
+void set_high(void)
 {
     gpio_set_value(PIN_NUM, 1);
 }
 
-void set_low()
+void set_low(void)
 {
     gpio_set_value(PIN_NUM, 0);
 }

@@ -23,10 +23,10 @@ static unsigned int command = DEFAULT_WORD;
 static struct hrtimer mytimer;
 ktime_t mytime;
 
-static enum hrtimer_restart hrtimer_callback(struct hrtimer *hrt)
+static enum hrtimer_restart finish(struct hrtimer *hrt)
 {
-    hrtimer_add_expires_ns(&mytimer, 1000000000);
-    return HRTIMER_RESTART;
+    waiting = 0;
+    return HRTIMER_NORESTART;
 }
 
 static enum hrtimer_restart one_set_low(struct hrtimer *hrt)
@@ -45,41 +45,7 @@ static enum hrtimer_restart zero_set_low(struct hrtimer *hrt)
     return HRTIMER_RESTART;
 }
 
-static enum hrtimer_restart finish(struct hrtimer *hrt)
-{
-    waiting = 0;
-    return HRTIMER_NORESTART;
-}
-
-
-void sendWord(unsigned int word)
-{
-    if (sizeof word != 32)
-    {
-        printk("word has wrong size!");
-        return;
-    }
-
-    while (position < 32 && !waiting)
-    {
-        if (word & (1 << position))
-        {
-            // is one, send one
-            send_one();
-            printk("1");
-        }
-        else
-        {
-            // is zero, send zero
-            send_zero();
-            printk("0");
-        }
-        position++;
-    }
-    position = 0;
-}
-
-void send_one()
+void send_one(void)
 {
     mytimer.function = one_set_low;
     mytime = ktime_set(0, 58000);
@@ -88,33 +54,59 @@ void send_one()
     set_high();
 }
 
-void send_zero() {
-    mytimer.function = one_set_low;
+void send_zero(void) {
+    mytimer.function = zero_set_low;
     mytime = ktime_set(0, 116000);
     waiting = 1;
     hrtimer_start(&mytimer, mytime, HRTIMER_MODE_REL);
     set_high();
 }
 
-void send_left_fast(){
+void wait_for_finish(void){
+    while(waiting){}
+    return;
+}
+
+void sendWord(unsigned int word)
+{
+    if (sizeof word != 4)
+    {
+        printk("word has wrong size!");
+        return;
+    }
+    printk("start");
+    while (position < 32)
+    {
+        if (word & (1 << position))
+        {
+            // is one, send one
+            send_one();
+            printk("1");
+            wait_for_finish();
+        }
+        else
+        {
+            // is zero, send zero
+            send_zero();
+            printk("0");
+            wait_for_finish();
+        }
+        position++;
+    }
+    printk("ende");
+    position = 0;
+}
+
+
+void send_left_fast(void){
     setDirection(&command, 1);
     setMotor(&command, 1);
     setSpeed(&command, 255);
-    printk("command: %d", command);
+    printk("command: %u\n", command);
     sendWord(command);
     command = DEFAULT_WORD;
 }
 
-static ssize_t my_drv_read(struct file *instance, char __user *user, size_t count, loff_t *offset)
-{
-    unsigned long not_copied, to_copy;
-    to_copy = min(count, sizeof(hits_per_second));
-    not_copied = copy_to_user(user, &hits_per_second, to_copy);
-    *offset += to_copy - not_copied;
-    printk("Habe %ld Bytes geschrieben\n", to_copy - not_copied);
-    printk("Hits: %ld", hits_per_second);
-    return to_copy - not_copied;
-}
 
 static struct file_operations fops = {
     .owner = THIS_MODULE,

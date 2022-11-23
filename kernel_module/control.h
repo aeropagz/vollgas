@@ -1,6 +1,6 @@
-const unsigned int DEFAULT_WORD = 0b1111 1111 1111 0000 0000 0000 0000 0001;
+const unsigned int DEFAULT_WORD = 0b11111111111100000000000000000001;
 
-unsigned int setDirection(unsigned int *word, unsigned char direction)
+void setDirection(unsigned int *word, unsigned char direction)
 {
     if (direction > 1){
         printk("unvalid param, must be 0 or 1");
@@ -9,10 +9,10 @@ unsigned int setDirection(unsigned int *word, unsigned char direction)
 }
 
 
-unsigned int setSpeed(unsigned int *word, unsigned char speed) {
+void setSpeed(unsigned int *word, unsigned char speed) {
     *word |= (speed << 2); 
 }
 
-unsigned int setMotor(unsigned int *word, unsigned char addr) {
-    *word |= (addr << 12)
+void setMotor(unsigned int *word, unsigned char addr) {
+    *word |= (addr << 12);
 }
