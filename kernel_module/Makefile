@@ -22,7 +22,7 @@ clean:
 	rm $(CFileName).o
 
 reload:
-	sudo rmmod vollgas
+	sudo rmmod vollgas &> /dev/null 
 	make all
 	sudo insmod vollgas.ko
 endif

@@ -17,7 +17,6 @@ static struct class *myClass;
 static struct device *myDevice;
 
 static unsigned int command = DEFAULT_WORD;
-
 struct OutputBuffer out;
 
 static struct hrtimer mytimer;
@@ -30,7 +29,13 @@ static enum hrtimer_restart writePayload(struct hrtimer *hrt)
 
     unsigned char value = readBitFromBuffer(out.encodedBits, out.position++);
     printk("bit: %d | val: %d ", out.position - 1, value);
-    if(value)
+    if(value){
+        set_high();
+    }
+    else {
+        set_low();
+    }
+
     hrtimer_add_expires_ns(&mytimer, 58000);
     return HRTIMER_RESTART;
 }
@@ -45,10 +50,11 @@ void sendWord(unsigned int word)
 
 void send_left_fast(void)
 {
-    printk("start\n");
+    printk("Start building command: LEFT_FAST_M1\n");
     setDirection(&command, 1);
     setMotor(&command, 1);
     setSpeed(&command, 255);
+    printk("Command: %u", command);
     sendWord(command);
     command = DEFAULT_WORD;
     printk("Command left fast sending...");
