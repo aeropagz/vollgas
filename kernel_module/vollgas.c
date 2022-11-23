@@ -18,82 +18,33 @@ static struct device *myDevice;
 
 static unsigned int command = DEFAULT_WORD;
 
-struct outputBuffer {
-    unsigned char encodedBits [16];
-    unsigned int position;
-    unsigned int length;
-} out;
-
+struct OutputBuffer out;
 
 static struct hrtimer mytimer;
 ktime_t mytime;
 
-
-void writeBitIntoBuffer(unsigned char buffer [], unsigned int position, unsigned char value){
-    int bytePos = position / 8;
-    int bitPos = position % 8;
-    printk("byte: %d, bit: %d, pos: %u, value: %u\n", bytePos, bitPos, position, value);
-    if(value) {
-        buffer[bytePos] |= (1 << bitPos);  
-    } else {
-        buffer[bytePos] &= ~(1 << bitPos);
-    }
-}
-
-char readBitFromBuffer(unsigned char buffer[], unsigned int position){
-    int bytePos = position / 8;
-    int bitPos = position % 8;
-    unsigned char read = buffer[bytePos] & (1 << bitPos);
-    return read >> bitPos;
-}
-
-static enum hrtimer_restart write_bit(struct hrtimer *hrt)
+static enum hrtimer_restart writePayload(struct hrtimer *hrt)
 {
-    if(out.position >= out.length)
+    if (out.position >= out.length)
         return HRTIMER_NORESTART;
 
     unsigned char value = readBitFromBuffer(out.encodedBits, out.position++);
-    printk("bit: %d | val: %d ",out.position - 1, value);
+    printk("bit: %d | val: %d ", out.position - 1, value);
+    if(value)
     hrtimer_add_expires_ns(&mytimer, 58000);
     return HRTIMER_RESTART;
 }
 
-
-void encodePayload(struct outputBuffer* out, unsigned int word){
-    printk("start encoding \n");
-    out->position = 0;
-    int i = 0;
-
-    while(i < 32 ){
-        if(word & (1 << i)) {
-            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
-            writeBitIntoBuffer(out->encodedBits, out->position++, 0);
-        } else {
-            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
-            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
-            writeBitIntoBuffer(out->encodedBits, out->position++, 0);
-            writeBitIntoBuffer(out->encodedBits, out->position++, 0);
-        }
-        i++;
-    }
-    printk("finish encoding \n");
-    out->length = out->position;
-    out->position = 0;
-    printk("payload length: %u",out->length);
-}
-
-
-
 void sendWord(unsigned int word)
 {
     encodePayload(&out, word);
-    mytimer.function = write_bit;
+    mytimer.function = writePayload;
     mytime = ktime_set(0, 58000);
     hrtimer_start(&mytimer, mytime, HRTIMER_MODE_REL);
 }
 
-
-void send_left_fast(void){
+void send_left_fast(void)
+{
     printk("start\n");
     setDirection(&command, 1);
     setMotor(&command, 1);
@@ -102,7 +53,6 @@ void send_left_fast(void){
     command = DEFAULT_WORD;
     printk("Command left fast sending...");
 }
-
 
 static struct file_operations fops = {
     .owner = THIS_MODULE,
@@ -154,7 +104,7 @@ static int __init mod_init(void)
     // timer setup
     hrtimer_init(&mytimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
     send_left_fast();
-    
+
     return 0;
 
 free_class:
