@@ -53,10 +53,14 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = main.cpp \
-		MainWindow.cpp moc_MainWindow.cpp
+		MainWindow.cpp \
+		Control.cpp moc_MainWindow.cpp \
+		moc_Control.cpp
 OBJECTS       = main.o \
 		MainWindow.o \
-		moc_MainWindow.o
+		Control.o \
+		moc_MainWindow.o \
+		moc_Control.o
 DIST          = /usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/arm-linux-gnueabihf/qt5/mkspecs/common/unix.conf \
 		/usr/lib/arm-linux-gnueabihf/qt5/mkspecs/common/linux.conf \
@@ -133,8 +137,10 @@ DIST          = /usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/exceptions.prf \
 		/usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/yacc.prf \
 		/usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/lex.prf \
-		qt.pro MainWindow.hpp main.cpp \
-		MainWindow.cpp
+		qt.pro MainWindow.hpp \
+		Control.hpp main.cpp \
+		MainWindow.cpp \
+		Control.cpp
 QMAKE_TARGET  = qt
 DESTDIR       = 
 TARGET        = qt
@@ -316,8 +322,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents MainWindow.hpp $(DISTDIR)/
-	$(COPY_FILE) --parents main.cpp MainWindow.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents MainWindow.hpp Control.hpp $(DISTDIR)/
+	$(COPY_FILE) --parents main.cpp MainWindow.cpp Control.cpp $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -348,13 +354,19 @@ compiler_moc_predefs_clean:
 moc_predefs.h: /usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/data/dummy.cpp
 	g++ -pipe -O2 -Wall -Wextra -dM -E -o moc_predefs.h /usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: moc_MainWindow.cpp
+compiler_moc_header_make_all: moc_MainWindow.cpp moc_Control.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_MainWindow.cpp
+	-$(DEL_FILE) moc_MainWindow.cpp moc_Control.cpp
 moc_MainWindow.cpp: MainWindow.hpp \
+		Control.hpp \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/piuser/Desktop/projects/vollgas/qt/moc_predefs.h -I/usr/lib/arm-linux-gnueabihf/qt5/mkspecs/linux-g++ -I/home/piuser/Desktop/projects/vollgas/qt -I/home/piuser/Desktop/projects/vollgas/qt -I/usr/include/arm-linux-gnueabihf/qt5 -I/usr/include/arm-linux-gnueabihf/qt5/QtWidgets -I/usr/include/arm-linux-gnueabihf/qt5/QtGui -I/usr/include/arm-linux-gnueabihf/qt5/QtCore -I/usr/include/c++/10 -I/usr/include/arm-linux-gnueabihf/c++/10 -I/usr/include/c++/10/backward -I/usr/lib/gcc/arm-linux-gnueabihf/10/include -I/usr/local/include -I/usr/include/arm-linux-gnueabihf -I/usr/include MainWindow.hpp -o moc_MainWindow.cpp
+
+moc_Control.cpp: Control.hpp \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/piuser/Desktop/projects/vollgas/qt/moc_predefs.h -I/usr/lib/arm-linux-gnueabihf/qt5/mkspecs/linux-g++ -I/home/piuser/Desktop/projects/vollgas/qt -I/home/piuser/Desktop/projects/vollgas/qt -I/usr/include/arm-linux-gnueabihf/qt5 -I/usr/include/arm-linux-gnueabihf/qt5/QtWidgets -I/usr/include/arm-linux-gnueabihf/qt5/QtGui -I/usr/include/arm-linux-gnueabihf/qt5/QtCore -I/usr/include/c++/10 -I/usr/include/arm-linux-gnueabihf/c++/10 -I/usr/include/c++/10/backward -I/usr/lib/gcc/arm-linux-gnueabihf/10/include -I/usr/local/include -I/usr/include/arm-linux-gnueabihf -I/usr/include Control.hpp -o moc_Control.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
@@ -372,14 +384,22 @@ compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean
 
 ####### Compile
 
-main.o: main.cpp MainWindow.hpp
+main.o: main.cpp MainWindow.hpp \
+		Control.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
-MainWindow.o: MainWindow.cpp MainWindow.hpp
+MainWindow.o: MainWindow.cpp MainWindow.hpp \
+		Control.hpp
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o MainWindow.o MainWindow.cpp
+
+Control.o: Control.cpp Control.hpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o Control.o Control.cpp
 
 moc_MainWindow.o: moc_MainWindow.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_MainWindow.o moc_MainWindow.cpp
+
+moc_Control.o: moc_Control.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_Control.o moc_Control.cpp
 
 ####### Install
 

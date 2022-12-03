@@ -9,39 +9,30 @@
 #include <QCheckBox>
 #include <math.h>
 #include <string>
+#include <Control.hpp>
 
 class MainWindow : public QMainWindow{
     Q_OBJECT
 public:
 
 	QFont *headlineFont;
-	QFont *bodyFont;
+	QFont *subtitleFont;
 	QWidget * wdg;
 
-	QPushButton *btnStart;
-	QSlider *sliderLeft;
-	QSlider *sliderRight;
 
 	QVBoxLayout *leftSide;
 	QVBoxLayout *rightSide;
 	QHBoxLayout *mainRow;
 	QVBoxLayout *mainColumn;
+	
 
-	QLabel *directionHeadline;
-	QCheckBox *forward;
-	QLabel *directionLabel;
-	QHBoxLayout *directionLayout;
+	Control *leftMotor;
+	Control *rightMotor;
+
 
 	MainWindow();
 public slots:
 	void initCommon();
-	void initDirection();
-	void OnStartClicked();
-	void OnEndClicked();
-	void onSliderChanged(int);
-	void update();
-	void updateLabels();
-	void directionChanged(int);
 private:
     
 };
