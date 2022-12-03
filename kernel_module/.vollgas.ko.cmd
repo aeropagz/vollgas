@@ -1,0 +1,1 @@
+cmd_/home/piuser/Desktop/Examples/17_vollgas/kernel_module/vollgas.ko := ld -r -EL -z noexecstack --build-id=sha1  -T scripts/module.lds -o /home/piuser/Desktop/Examples/17_vollgas/kernel_module/vollgas.ko /home/piuser/Desktop/Examples/17_vollgas/kernel_module/vollgas.o /home/piuser/Desktop/Examples/17_vollgas/kernel_module/vollgas.mod.o;  true
