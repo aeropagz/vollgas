@@ -44,13 +44,13 @@ __used __section("__versions") = {
 	{ 0xfe990052, "gpio_free" },
 	{ 0xb77942ad, "gpiod_direction_output_raw" },
 	{ 0x47229b5c, "gpio_request" },
+	{ 0x92997ed8, "_printk" },
 	{ 0xa339085b, "gpiod_set_raw_value" },
 	{ 0xf7d5fff7, "gpio_to_desc" },
-	{ 0x92997ed8, "_printk" },
 	{ 0xb1ad28e0, "__gnu_mcount_nc" },
 };
 
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "5E0464FD024CF98E3655B19");
+MODULE_INFO(srcversion, "146312A998EB53D9137ED48");

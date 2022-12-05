@@ -27,8 +27,8 @@ static enum hrtimer_restart writePayload(struct hrtimer *hrt)
     if (out.position >= out.length)
         return HRTIMER_NORESTART;
 
-    unsigned char value = readBitFromBuffer(out.encodedBits, out.position++);
-    printk("bit: %d | val: %d ", out.position - 1, value);
+    unsigned char value = readBitFromBuffer(out.encodedBits, out.position--);
+    //printk("bit: %u | val: %d ", out.position + 1, value);
     if(value){
         set_high();
     }
@@ -43,6 +43,8 @@ static enum hrtimer_restart writePayload(struct hrtimer *hrt)
 void sendWord(unsigned int word)
 {
     encodePayload(&out, word);
+    out.position = (out.length - 1);
+    printk("Starting at pos: %u", out.position);
     mytimer.function = writePayload;
     mytime = ktime_set(0, 58000);
     hrtimer_start(&mytimer, mytime, HRTIMER_MODE_REL);
@@ -51,7 +53,7 @@ void sendWord(unsigned int word)
 void send_left_fast(void)
 {
     printk("Start building command: LEFT_FAST_M1\n");
-    setDirection(&command, 1);
+    setDirection(&command, 0);
     setMotor(&command, 1);
     setSpeed(&command, 255);
     printk("Command: %u", command);

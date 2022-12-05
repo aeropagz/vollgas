@@ -41,19 +41,19 @@ void encodePayload(struct OutputBuffer *out, unsigned int word)
     {
         if (word & (1 << i))
         {
-            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
             writeBitIntoBuffer(out->encodedBits, out->position++, 0);
+            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
         }
         else
         {
-            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
-            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
             writeBitIntoBuffer(out->encodedBits, out->position++, 0);
             writeBitIntoBuffer(out->encodedBits, out->position++, 0);
+            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
+            writeBitIntoBuffer(out->encodedBits, out->position++, 1);
         }
         i++;
     }
-    printk("finish encoding \n");
+    printk("finish encoding, pos: %u\n", out->position);
     out->length = out->position;
     out->position = 0;
     printk("payload length: %u", out->length);
