@@ -58,7 +58,7 @@ void Control::updateLabels() {
 }
 
 void Control::onSliderReleased() {
-	printf("Silder released\n");
+	printf("Silder released. ID: %d Speed: %d, Direction: %d\n", motorData.id, motorData.speed, motorData.direction);
 	sendToDriver(motorData);
 }
 
