@@ -70,6 +70,7 @@ void Control::directionChanged(int state) {
 	printf("Direction changed\n");
 	motorData.direction = state;
 	slider->setValue(0);
+	sendToDriver(motorData);
 	update();
 }
 
