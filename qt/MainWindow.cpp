@@ -11,8 +11,8 @@ MainWindow::MainWindow()
 	mainColumn = new QVBoxLayout();
 	leftSide = new QVBoxLayout();
 	rightSide = new QVBoxLayout();
-	leftMotor = new Control("Motor links");
-	rightMotor = new Control("Motor rechts");
+	leftMotor = new Control("Motor links", 1);
+	rightMotor = new Control("Motor rechts", 2);
 
 	initCommon();
 	
