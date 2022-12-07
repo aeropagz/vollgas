@@ -874,6 +874,7 @@ deps_/home/piuser/Desktop/Examples/17_vollgas/kernel_module/vollgas.o := \
   include/linux/cdev.h \
   include/linux/delay.h \
   arch/arm/include/asm/delay.h \
+  /home/piuser/Desktop/Examples/17_vollgas/kernel_module/../commons/data.h \
   /home/piuser/Desktop/Examples/17_vollgas/kernel_module/control.h \
   /home/piuser/Desktop/Examples/17_vollgas/kernel_module/gpio.h \
   include/linux/gpio.h \

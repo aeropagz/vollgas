@@ -5,7 +5,9 @@
 #include <linux/uaccess.h>
 #include <linux/hrtimer.h>
 #include <linux/delay.h>
+#include <linux/semaphore.h>
 
+#include "../commons/data.h"
 #include "control.h"
 #include "gpio.h"
 
@@ -17,24 +19,22 @@ static dev_t myDevNumber;
 static struct cdev *myCdev;
 static struct class *myClass;
 static struct device *myDevice;
+static struct semaphore my_semaphore;
+
 
 static unsigned int command = DEFAULT_WORD;
+static struct _data oldData;
 struct OutputBuffer out;
-
-struct Command {
-    uint32_t motor1Speed;
-    uint32_t motor2Speed;
-    uint8_t motor1Direction;
-    uint8_t motor2Direction;
-} data;
 
 static struct hrtimer mytimer;
 ktime_t mytime;
 
 static enum hrtimer_restart writePayload(struct hrtimer *hrt)
 {
-    if (out.position >= out.length)
+    if (out.position >= out.length){
+        up(&my_semaphore);
         return HRTIMER_NORESTART;
+    }
 
     unsigned char value = readBitFromBuffer(out.encodedBits, out.position--);
     // printk("bit: %u | val: %d ", out.position + 1, value);
@@ -58,6 +58,7 @@ void sendWord(unsigned int word)
     printk("Starting at pos: %u", out.position);
     mytimer.function = writePayload;
     mytime = ktime_set(0, 58000);
+    down(&my_semaphore);
     hrtimer_start(&mytimer, mytime, HRTIMER_MODE_REL);
 }
 
@@ -66,7 +67,7 @@ void send_left_fast(void)
     printk("Start building command: LEFT_FAST_M1\n");
     setDirection(&command, 1);
     setMotor(&command, 1);
-    setSpeed(&command, 100);
+    setSpeed(&command, 0);
     printk("Command: %u", command);
     sendWord(command);
     command = DEFAULT_WORD;
@@ -74,12 +75,13 @@ void send_left_fast(void)
 }
 
 
-static struct file_operations fops = {
-    .owner = THIS_MODULE,
-    .read = NULL,
-    .open = NULL,
-    .release = NULL,
-};
+
+
+void buildCommandMotor(struct _data* newData){
+    setMotor(&command, 1);
+    setDirection(&command, newData->motor1Direction);
+    setSpeed(&command, newData->motor1Speed); 
+}
 
 static long ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -89,20 +91,22 @@ static long ioctl(struct file *file, unsigned int cmd, unsigned long arg)
     {
     case WR_VALUE:
         printk("Receiving data");
-        if (copy_from_user(&data, (struct Command *)arg, sizeof(data)))
+        if (copy_from_user(&Data, (struct Command *)arg, sizeof(Data)))
         {
             pr_err("Error receiving\n");
         }
-
-
+        buildCommandMotor(&Data);
+        sendWord(command);
         break;
+
     case RD_VALUE:
         printk("Sending data");
-        if (copy_to_user((struct myType *)arg, &data, sizeof(struct Command)))
+        if (copy_to_user((struct myType *)arg, &Data, sizeof(Data)))
         {
             pr_err("Error sending\n");
         }
         break;
+        
     default:
         pr_info("No Comand recognized\n");
         break;
@@ -110,6 +114,13 @@ static long ioctl(struct file *file, unsigned int cmd, unsigned long arg)
     return 0;
 }
 
+static struct file_operations fops = {
+    .owner = THIS_MODULE,
+    .read = NULL,
+    .open = NULL,
+    .release = NULL,
+    .unlocked_ioctl = ioctl,
+};
 /* Wenn Modul in den Kernel geladen wird */
 static int __init mod_init(void)
 {
@@ -152,6 +163,8 @@ static int __init mod_init(void)
 
     // timer setup
     hrtimer_init(&mytimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+    sema_init(&my_semaphore, 1);
+
     send_left_fast();
 
     return 0;
