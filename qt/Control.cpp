@@ -1,13 +1,8 @@
-#include <stdio.h>
+
 #include "Control.hpp"
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-void sendToDriver(MotorData motorData);
-#define WR_VALUE _IOW('a','a',MotorData*)
+#include "Helper.h"
+
+
 Control::Control(std::string title, int id) {
 	motorData.id = id;
 	motorData.speed = 0;
@@ -72,21 +67,6 @@ void Control::directionChanged(int state) {
 	slider->setValue(0);
 	sendToDriver(motorData);
 	update();
-}
-
-void sendToDriver(MotorData motorData) {
-
-int f = open( "/dev/VOLLGAS", O_RDWR);
-	 if(f < 0) {
-                printf("Cannot open device file...\n");
-                return;
-        }
- 
-	printf("WR_VALUE %x\n",WR_VALUE);     
-    ioctl(f, WR_VALUE, (MotorData*) &motorData); 
-  
-	close(f);
-
 }
 
 void Control::update() {
