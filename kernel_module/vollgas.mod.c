@@ -41,7 +41,6 @@ __used __section("__versions") = {
 	{ 0x6453db1a, "cdev_alloc" },
 	{ 0xe3ec2f2b, "alloc_chrdev_region" },
 	{ 0x51a910c0, "arm_copy_to_user" },
-	{ 0x8e865d3c, "arm_delay_ops" },
 	{ 0x5f754e5a, "memset" },
 	{ 0xae353d77, "arm_copy_from_user" },
 	{ 0xec523f88, "hrtimer_start_range_ns" },
@@ -59,4 +58,4 @@ __used __section("__versions") = {
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "9887B45FFE37A0E8C80BE9B");
+MODULE_INFO(srcversion, "683178E695D575BBE072CE3");

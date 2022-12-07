@@ -22,8 +22,7 @@ static struct device *myDevice;
 static struct semaphore my_semaphore;
 
 
-static unsigned int command = DEFAULT_WORD;
-static struct _data oldData;
+static MotorData motorControl;
 struct OutputBuffer out;
 
 static struct hrtimer mytimer;
@@ -33,17 +32,16 @@ static enum hrtimer_restart writePayload(struct hrtimer *hrt)
 {
     if (out.position >= out.length){
         up(&my_semaphore);
+        printk("released semaphore\n");
         return HRTIMER_NORESTART;
     }
 
     unsigned char value = readBitFromBuffer(out.encodedBits, out.position--);
-    // printk("bit: %u | val: %d ", out.position + 1, value);
-    if (value)
-    {
+    // printk("bit: %u | val: %d \n", out.position + 1, value);
+    if (value) {
         set_high();
     }
-    else
-    {
+    else {
         set_low();
     }
 
@@ -51,23 +49,26 @@ static enum hrtimer_restart writePayload(struct hrtimer *hrt)
     return HRTIMER_RESTART;
 }
 
-void sendWord(unsigned int word)
+void sendWord(uint32_t word)
 {
+    printk("Wait for semaphore\n");
+    down(&my_semaphore);
+    printk("Got semaphore\n");
     encodePayload(&out, word);
     out.position = (out.length - 1);
     printk("Starting at pos: %u", out.position);
     mytimer.function = writePayload;
     mytime = ktime_set(0, 58000);
-    down(&my_semaphore);
     hrtimer_start(&mytimer, mytime, HRTIMER_MODE_REL);
 }
 
 void send_left_fast(void)
 {
+    uint32_t command = DEFAULT_WORD;
     printk("Start building command: LEFT_FAST_M1\n");
     setDirection(&command, 1);
     setMotor(&command, 1);
-    setSpeed(&command, 0);
+    setSpeed(&command,100);
     printk("Command: %u", command);
     sendWord(command);
     command = DEFAULT_WORD;
@@ -75,38 +76,37 @@ void send_left_fast(void)
 }
 
 
-
-
-void buildCommandMotor(struct _data* newData){
-    setMotor(&command, 1);
-    setDirection(&command, newData->motor1Direction);
-    setSpeed(&command, newData->motor1Speed); 
+uint32_t buildCommandMotor(MotorData* newData){
+    uint32_t commandWord = DEFAULT_WORD;
+    setMotor(&commandWord, 1);
+    setDirection(&commandWord, newData->direction);
+    setSpeed(&commandWord, newData->speed);
+    return commandWord;
 }
 
 static long ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-    int i = 0;
     printk("ioctrl called!\n");
     switch (cmd)
     {
     case WR_VALUE:
         printk("Receiving data");
-        if (copy_from_user(&Data, (struct Command *)arg, sizeof(Data)))
+        if (copy_from_user(&motorControl, (struct MotorData *)arg, sizeof(motorControl)))
         {
             pr_err("Error receiving\n");
         }
-        buildCommandMotor(&Data);
+        uint32_t command = buildCommandMotor(&motorControl);
         sendWord(command);
         break;
 
     case RD_VALUE:
         printk("Sending data");
-        if (copy_to_user((struct myType *)arg, &Data, sizeof(Data)))
+        if (copy_to_user((struct MotorData *)arg, &motorControl, sizeof(motorControl)))
         {
             pr_err("Error sending\n");
         }
         break;
-        
+
     default:
         pr_info("No Comand recognized\n");
         break;
@@ -191,7 +191,7 @@ static void __exit mod_exit(void)
     unregister_chrdev_region(myDevNumber, 1);
 
     hrtimer_cancel(&mytimer);
-
+    sema_destroy(&my_semaphore);
     return;
 }
 
