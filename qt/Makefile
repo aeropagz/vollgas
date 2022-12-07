@@ -138,7 +138,8 @@ DIST          = /usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/yacc.prf \
 		/usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/lex.prf \
 		qt.pro MainWindow.hpp \
-		Control.hpp main.cpp \
+		Control.hpp \
+		../commons/data.h main.cpp \
 		MainWindow.cpp \
 		Control.cpp
 QMAKE_TARGET  = qt
@@ -322,7 +323,7 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/arm-linux-gnueabihf/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents MainWindow.hpp Control.hpp $(DISTDIR)/
+	$(COPY_FILE) --parents MainWindow.hpp Control.hpp ../commons/data.h $(DISTDIR)/
 	$(COPY_FILE) --parents main.cpp MainWindow.cpp Control.cpp $(DISTDIR)/
 
 
@@ -385,7 +386,8 @@ compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean
 ####### Compile
 
 main.o: main.cpp MainWindow.hpp \
-		Control.hpp
+		Control.hpp \
+		../commons/data.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
 MainWindow.o: MainWindow.cpp MainWindow.hpp \

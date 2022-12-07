@@ -6,6 +6,7 @@
 #include <QLabel>
 #include <QCheckBox>
 #include <QString>
+#include "../commons/data.h"
 
 class Control : public QWidget
 {
@@ -21,16 +22,20 @@ public:
     QLabel *directionLabel;
     QHBoxLayout *directionLayout;
 
-QVBoxLayout *column;
+    QVBoxLayout *column;
 
-    Control(std::string title);
+    MotorData motorData;
+
+    Control(std::string title, int id);
 
 protected:
 
 signals:
 public slots:
 void updateLabels();
-void onSliderChanged(int);
+void onSliderReleased();
+void onSliderChanged(int value);
 void directionChanged(int state);
 void update();
+void sendToDriver();
 };
