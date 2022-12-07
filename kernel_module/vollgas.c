@@ -10,6 +10,8 @@
 #include "gpio.h"
 
 #define DEV_NAME "VOLLGAS"
+#define WR_VALUE _IOW('a','a',struct myType*)
+#define RD_VALUE _IOR('a','b',struct myType*)	 	
 
 static dev_t myDevNumber;
 static struct cdev *myCdev;
@@ -18,6 +20,13 @@ static struct device *myDevice;
 
 static unsigned int command = DEFAULT_WORD;
 struct OutputBuffer out;
+
+struct Command {
+    uint32_t motor1Speed;
+    uint32_t motor2Speed;
+    uint8_t motor1Direction;
+    uint8_t motor2Direction;
+} data;
 
 static struct hrtimer mytimer;
 ktime_t mytime;
@@ -28,11 +37,13 @@ static enum hrtimer_restart writePayload(struct hrtimer *hrt)
         return HRTIMER_NORESTART;
 
     unsigned char value = readBitFromBuffer(out.encodedBits, out.position--);
-    //printk("bit: %u | val: %d ", out.position + 1, value);
-    if(value){
+    // printk("bit: %u | val: %d ", out.position + 1, value);
+    if (value)
+    {
         set_high();
     }
-    else {
+    else
+    {
         set_low();
     }
 
@@ -53,14 +64,15 @@ void sendWord(unsigned int word)
 void send_left_fast(void)
 {
     printk("Start building command: LEFT_FAST_M1\n");
-    setDirection(&command, 0);
+    setDirection(&command, 1);
     setMotor(&command, 1);
-    setSpeed(&command, 255);
+    setSpeed(&command, 100);
     printk("Command: %u", command);
     sendWord(command);
     command = DEFAULT_WORD;
     printk("Command left fast sending...");
 }
+
 
 static struct file_operations fops = {
     .owner = THIS_MODULE,
@@ -68,6 +80,35 @@ static struct file_operations fops = {
     .open = NULL,
     .release = NULL,
 };
+
+static long ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+    int i = 0;
+    printk("ioctrl called!\n");
+    switch (cmd)
+    {
+    case WR_VALUE:
+        printk("Receiving data");
+        if (copy_from_user(&data, (struct Command *)arg, sizeof(data)))
+        {
+            pr_err("Error receiving\n");
+        }
+
+
+        break;
+    case RD_VALUE:
+        printk("Sending data");
+        if (copy_to_user((struct myType *)arg, &data, sizeof(struct Command)))
+        {
+            pr_err("Error sending\n");
+        }
+        break;
+    default:
+        pr_info("No Comand recognized\n");
+        break;
+    }
+    return 0;
+}
 
 /* Wenn Modul in den Kernel geladen wird */
 static int __init mod_init(void)
