@@ -31,8 +31,9 @@ ktime_t mytime;
 static enum hrtimer_restart writePayload(struct hrtimer *hrt)
 {
     if (out.position >= out.length){
+        set_high();
         up(&my_semaphore);
-        printk("released semaphore\n");
+        printk("released semaphore\n\n\n");
         return HRTIMER_NORESTART;
     }
 
@@ -78,9 +79,10 @@ void send_left_fast(void)
 
 uint32_t buildCommandMotor(MotorData* newData){
     uint32_t commandWord = DEFAULT_WORD;
-    setMotor(&commandWord, 1);
-    setDirection(&commandWord, newData->direction);
+    setMotor(&commandWord, newData->id);
+    setDirection(&commandWord, (newData->direction));
     setSpeed(&commandWord, newData->speed);
+    printk("Command: %u\n", commandWord);
     return commandWord;
 }
 
@@ -95,6 +97,7 @@ static long ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         {
             pr_err("Error receiving\n");
         }
+        printk("id: %u, speed: %u, direction: %u\n", motorControl.id, motorControl.speed, motorControl.direction);
         uint32_t command = buildCommandMotor(&motorControl);
         sendWord(command);
         break;
@@ -165,7 +168,7 @@ static int __init mod_init(void)
     hrtimer_init(&mytimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
     sema_init(&my_semaphore, 1);
 
-    send_left_fast();
+    // send_left_fast();
 
     return 0;
 
@@ -191,7 +194,6 @@ static void __exit mod_exit(void)
     unregister_chrdev_region(myDevNumber, 1);
 
     hrtimer_cancel(&mytimer);
-    sema_destroy(&my_semaphore);
     return;
 }
 
