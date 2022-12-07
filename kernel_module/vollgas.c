@@ -5,18 +5,24 @@
 #include <linux/uaccess.h>
 #include <linux/hrtimer.h>
 #include <linux/delay.h>
+#include <linux/semaphore.h>
 
+#include "../commons/data.h"
 #include "control.h"
 #include "gpio.h"
 
 #define DEV_NAME "VOLLGAS"
+#define WR_VALUE _IOW('a','a',struct myType*)
+#define RD_VALUE _IOR('a','b',struct myType*)	 	
 
 static dev_t myDevNumber;
 static struct cdev *myCdev;
 static struct class *myClass;
 static struct device *myDevice;
+static struct semaphore my_semaphore;
 
-static unsigned int command = DEFAULT_WORD;
+
+static MotorData motorControl;
 struct OutputBuffer out;
 
 static struct hrtimer mytimer;
@@ -24,12 +30,15 @@ ktime_t mytime;
 
 static enum hrtimer_restart writePayload(struct hrtimer *hrt)
 {
-    if (out.position >= out.length)
+    if (out.position >= out.length){
+        up(&my_semaphore);
+        printk("released semaphore\n");
         return HRTIMER_NORESTART;
+    }
 
     unsigned char value = readBitFromBuffer(out.encodedBits, out.position--);
-    //printk("bit: %u | val: %d ", out.position + 1, value);
-    if(value){
+    // printk("bit: %u | val: %d \n", out.position + 1, value);
+    if (value) {
         set_high();
     }
     else {
@@ -40,8 +49,11 @@ static enum hrtimer_restart writePayload(struct hrtimer *hrt)
     return HRTIMER_RESTART;
 }
 
-void sendWord(unsigned int word)
+void sendWord(uint32_t word)
 {
+    printk("Wait for semaphore\n");
+    down(&my_semaphore);
+    printk("Got semaphore\n");
     encodePayload(&out, word);
     out.position = (out.length - 1);
     printk("Starting at pos: %u", out.position);
@@ -52,14 +64,54 @@ void sendWord(unsigned int word)
 
 void send_left_fast(void)
 {
+    uint32_t command = DEFAULT_WORD;
     printk("Start building command: LEFT_FAST_M1\n");
-    setDirection(&command, 0);
+    setDirection(&command, 1);
     setMotor(&command, 1);
-    setSpeed(&command, 255);
+    setSpeed(&command,100);
     printk("Command: %u", command);
     sendWord(command);
     command = DEFAULT_WORD;
     printk("Command left fast sending...");
+}
+
+
+uint32_t buildCommandMotor(MotorData* newData){
+    uint32_t commandWord = DEFAULT_WORD;
+    setMotor(&commandWord, 1);
+    setDirection(&commandWord, newData->direction);
+    setSpeed(&commandWord, newData->speed);
+    return commandWord;
+}
+
+static long ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+    printk("ioctrl called!\n");
+    switch (cmd)
+    {
+    case WR_VALUE:
+        printk("Receiving data");
+        if (copy_from_user(&motorControl, (struct MotorData *)arg, sizeof(motorControl)))
+        {
+            pr_err("Error receiving\n");
+        }
+        uint32_t command = buildCommandMotor(&motorControl);
+        sendWord(command);
+        break;
+
+    case RD_VALUE:
+        printk("Sending data");
+        if (copy_to_user((struct MotorData *)arg, &motorControl, sizeof(motorControl)))
+        {
+            pr_err("Error sending\n");
+        }
+        break;
+
+    default:
+        pr_info("No Comand recognized\n");
+        break;
+    }
+    return 0;
 }
 
 static struct file_operations fops = {
@@ -67,8 +119,8 @@ static struct file_operations fops = {
     .read = NULL,
     .open = NULL,
     .release = NULL,
+    .unlocked_ioctl = ioctl,
 };
-
 /* Wenn Modul in den Kernel geladen wird */
 static int __init mod_init(void)
 {
@@ -111,6 +163,8 @@ static int __init mod_init(void)
 
     // timer setup
     hrtimer_init(&mytimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+    sema_init(&my_semaphore, 1);
+
     send_left_fast();
 
     return 0;
@@ -137,7 +191,7 @@ static void __exit mod_exit(void)
     unregister_chrdev_region(myDevNumber, 1);
 
     hrtimer_cancel(&mytimer);
-
+    sema_destroy(&my_semaphore);
     return;
 }
 

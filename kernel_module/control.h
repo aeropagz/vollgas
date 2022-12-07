@@ -73,5 +73,5 @@ void setSpeed(unsigned int *word, unsigned char speed) {
 }
 
 void setMotor(unsigned int *word, unsigned char addr) {
-    *word |= (addr << 12);
+    *word |= (addr << 11);
 }
