@@ -37,5 +37,4 @@ void onSliderReleased();
 void onSliderChanged(int value);
 void directionChanged(int state);
 void update();
-void sendToDriver();
 };
