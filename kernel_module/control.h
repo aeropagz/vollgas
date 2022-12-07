@@ -12,7 +12,7 @@ void writeBitIntoBuffer(unsigned char buffer[], unsigned int position, unsigned 
 {
     int bytePos = position / 8;
     int bitPos = position % 8;
-    printk("byte: %d, bit: %d, pos: %u, value: %u\n", bytePos, bitPos, position, value);
+    // printk("byte: %d, bit: %d, pos: %u, value: %u\n", bytePos, bitPos, position, value);
     if (value)
     {
         buffer[bytePos] |= (1 << bitPos);
@@ -53,6 +53,8 @@ void encodePayload(struct OutputBuffer *out, unsigned int word)
         }
         i++;
     }
+    
+
     printk("finish encoding, pos: %u\n", out->position);
     out->length = out->position;
     out->position = 0;
@@ -62,7 +64,9 @@ void encodePayload(struct OutputBuffer *out, unsigned int word)
 void setDirection(unsigned int *word, unsigned char direction)
 {
     if (direction > 1){
-        printk("unvalid param, must be 0 or 1");
+        printk("direction: %u\n", direction);
+        printk("unvalid param, must be 0 or 1\n");
+        return;
     }
     *word |= (direction << 18);
 }
