@@ -6,7 +6,7 @@
 Control::Control(std::string title, int id) {
 	motorData.id = id;
 	motorData.speed = 0;
-	motorData.direction = 0;
+	motorData.direction = 1;
     setMinimumHeight(400);
     setMinimumWidth(250);
 
