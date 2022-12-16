@@ -63,19 +63,6 @@ void sendWord(uint32_t word)
     hrtimer_start(&mytimer, mytime, HRTIMER_MODE_REL);
 }
 
-void send_left_fast(void)
-{
-    uint32_t command = DEFAULT_WORD;
-    printk("Start building command: LEFT_FAST_M1\n");
-    setDirection(&command, 1);
-    setMotor(&command, 1);
-    setSpeed(&command,100);
-    printk("Command: %u", command);
-    sendWord(command);
-    command = DEFAULT_WORD;
-    printk("Command left fast sending...");
-}
-
 
 uint32_t buildCommandMotor(MotorData* newData){
     uint32_t commandWord = DEFAULT_WORD;
@@ -86,11 +73,10 @@ uint32_t buildCommandMotor(MotorData* newData){
     return commandWord;
 }
 
+
 static long ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-    printk("ioctrl called!\n");
-    switch (cmd)
-    {
+    switch (cmd) {
     case WR_VALUE:
         printk("Receiving data");
         if (copy_from_user(&motorControl, (struct MotorData *)arg, sizeof(motorControl)))
@@ -101,21 +87,14 @@ static long ioctl(struct file *file, unsigned int cmd, unsigned long arg)
         uint32_t command = buildCommandMotor(&motorControl);
         sendWord(command);
         break;
-
-    case RD_VALUE:
-        printk("Sending data");
-        if (copy_to_user((struct MotorData *)arg, &motorControl, sizeof(motorControl)))
-        {
-            pr_err("Error sending\n");
-        }
-        break;
-
+        
     default:
         pr_info("No Comand recognized\n");
         break;
     }
     return 0;
 }
+
 
 static struct file_operations fops = {
     .owner = THIS_MODULE,
@@ -125,6 +104,8 @@ static struct file_operations fops = {
     .unlocked_ioctl = ioctl,
 };
 /* Wenn Modul in den Kernel geladen wird */
+
+
 static int __init mod_init(void)
 {
     printk("INIT vollgas\n");
@@ -167,8 +148,6 @@ static int __init mod_init(void)
     // timer setup
     hrtimer_init(&mytimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
     sema_init(&my_semaphore, 1);
-
-    // send_left_fast();
 
     return 0;
 
