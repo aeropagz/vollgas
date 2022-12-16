@@ -59,7 +59,7 @@ void Control::onSliderReleased() {
 
 void Control::onSliderChanged(int value) {
 	motorData.speed = value;
-	sendToDriver();
+	sendToDriver(motorData);
 }
 
 void Control::directionChanged(int state) {
